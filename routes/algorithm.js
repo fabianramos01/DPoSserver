@@ -3,44 +3,77 @@ module.exports = function(server, app) {
     const io = require('socket.io')(server);
 
     const serverIO = io.of('/server');
-    const clientIO = io.of('/client');
+    const nodeIO = io.of('/node');
 
+    const delegatedNum = 3;
+    const nodePercent = 0.1;
+
+    let totalStakes = 0;
     let nodeNum = 0;
     let votes = 0;
-    let minNum = 4;
     let nodes = [];
-    let servers = [];
+    // let servers = [];
     let process = [];
 
     serverIO.on('connection', (socket) => {
-        servers.push(socket.id);
+        // servers.push(socket.id);
         serverIO.emit('nodeList', {'list': nodes});
         console.log(`Servidor conectado con id: ${socket.id}`);
 
         socket.on('initiateVoting', () => {
-            if(minNum <= nodes.length) {
+            if(delegatedNum <= nodes.length) {
                 nodeNum = nodes.length;
+                calculateStakes();
+                nodeIO.emit('startVotation');
             }
         });
     });
 
-    clientIO.on('connection', (socket) => {
+    nodeIO.on('connection', (socket) => {
         nodes.push(new Node(socket.id, socket.request.connection.remoteAddress, socket.request.connection.remotePort));
         console.log(`Usuario conectado con id: ${socket.id}`);
         serverIO.emit('nodeList', {'list': nodes});
 
         socket.on('vote', (data) => {
             for (let i = 0; i < nodes.length; i++) {
-                if (node.id === data.id) {
+                if (nodes[i].id === data.id) {
                     nodes[i].votes  += data.stake;
                     break;
                 }
             }
             votes++;
+            if (votes === nodeNum) {
+                selectDelegates();
+            }
+        });
+
+        socket.on('task', (data) => {
+           process.push(data.task);
+           serverIO.emit('process', {'process': process});
         });
     });
 
-    app.get('/', (req, res) => {
+    function selectDelegates() {
+        votes = 0;
+        nodes.sort(function (a,b) {
+            return b - a;
+        });
+        serverIO.emit('resultVotation', {'nodes': nodes});
+        if (nodes[delegatedNum-1].votes >= (totalStakes*nodePercent)) {
+            nodeIO.emit('votationEnd')
+        } else {
+            nodeIO.emit('repeatVotation');
+        }
+    }
+    
+    function calculateStakes() {
+        totalStakes = 0;
+        nodes.forEach(node => {
+            totalStakes += node.stake;
+        });
+    }
+    
+    app.get('/', () => {
 
     });
 
@@ -49,6 +82,6 @@ module.exports = function(server, app) {
         this.ip = ip;
         this.port = port;
         this.votes = 0;
-        this.stack =  Math.random() * (6 - 1) + 1;
+        this.stake =  Math.random() * (6 - 1) + 1;
     }
 };

@@ -1,26 +1,27 @@
 const express = require('express');
 const path = require('path');
-const logger = require('morgan');
+const morgan = require('morgan');
+const http = require('http');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
-// var indexRouter = require('./routes/index');
+const algorithm = require('./routes/algorithm');
 
 const port = 3050;
 const app = express();
+const server = http.Server(app);
+algorithm(server, app);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 
 app.set('port', process.env.PORT || port);
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(morgan('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
+app.use('/', algorithm);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-app.listen(app.get('port'), () => console.log(`Example app listening on port ${app.get('port')}!`));
+server.listen(app.get('port'), () => console.log(`Example app listening on port ${app.get('port')}!`));

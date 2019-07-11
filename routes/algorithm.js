@@ -81,6 +81,15 @@ module.exports = function(server) {
         });
     });
 
+    function validateIp(ip){
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].ip === ip) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function selectDelegates() {
         votes = 0;
         sortNodes();

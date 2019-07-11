@@ -1,13 +1,15 @@
 let berkeleyApp = angular.module('app', []);
 
 berkeleyApp.controller('Controller', ['$http', '$scope', function ($http, $scope) {
-    let urlServer = 'http://192.168.0.23:3050/server';
+    const urlServer = 'http://10.4.73.162:3050/server';
+    const ioParams = {'reconnection': false};
+
 
     $scope.nodes = [];
     $scope.process = [];
     $scope.activeVotation = false;
 
-    const socket = io.connect(urlServer, {'forceNew': true});
+    const socket = io.connect(urlServer, ioParams);
 
     socket.on('nodeList', data => {
         $scope.nodes = data.list;

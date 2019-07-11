@@ -25,7 +25,7 @@
                     <th>Nombre</th>
                     <th>Votos</th>
                     <th>Participación</th>
-                    <th>Delegado</th>
+                    <!--                    <th>Delegado</th>-->
                 </tr>
                 </thead>
                 <tbody id="table-body">
@@ -35,13 +35,32 @@
                     <td>{{node.name}}</td>
                     <td>{{node.votes}}</td>
                     <td>{{node.stake}}</td>
-                    <td><label><input class="black-check" type="checkbox" checked="checked" disabled="disabled"/><span></span></label></td>
+                    <!--                    <td><label><input class="black-check" type="checkbox" checked="checked"-->
+                    <!--                                      disabled="disabled"/><span></span></label></td>-->
                 </tr>
                 </tbody>
             </table>
-            <button data-ng-click="initVotation()" ng-disabled="initButton" class="btn-small waves-effect waves-light black">
-                <i class="material-icons right">play_arrow</i>Iniciar votación
-            </button>
+            <div class="row">
+                <div class="col s3">
+                    <button data-ng-click="initVotation()" ng-disabled="initButton"
+                            class="btn-small waves-effect waves-light black">
+                        <i class="material-icons right">play_arrow</i>Iniciar votación
+                    </button>
+                </div>
+                <div class="preloader-wrapper small active" ng-show="activeVotation==true">
+                    <div class="spinner-layer spinner-blue-only">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col s3">
             <ul class="collection with-header">
@@ -50,13 +69,11 @@
             </ul>
         </div>
     </div>
-
-</div>
 </div>
 <!-- Compiled and minified JavaScript -->
 <!--<script src="https://code.jquery.com/jquery-3.4.1.min.js"-->
 <!--        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>-->
-<!--<script src="/socket.io/socket.io.js"></script>-->
+<script src="/socket.io/socket.io.js"></script>
 <script src="./js/lib/angular.min.js"></script>
 <script src="./js/controller.js"></script>
 </body>

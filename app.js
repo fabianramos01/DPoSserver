@@ -10,7 +10,7 @@ const algorithm = require('./routes/algorithm');
 const port = 3050;
 const app = express();
 const server = http.Server(app);
-algorithm(server, app);
+algorithm(server);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -22,6 +22,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'views')));
 
-app.use('/', algorithm);
+// app.use('/', algorithm);
 
 server.listen(app.get('port'), () => console.log(`Example app listening on port ${app.get('port')}!`));

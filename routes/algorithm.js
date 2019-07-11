@@ -1,12 +1,12 @@
-module.exports = function(server, app) {
+module.exports = function(server) {
 
     const io = require('socket.io')(server);
 
     const serverIO = io.of('/server');
     const nodeIO = io.of('/node');
 
-    const delegatedNum = 3;
-    const nodePercent = 0.1;
+    const delegatedNum = 1;
+    const nodePercent = 0.08;
 
     let totalStakes = 0;
     let isVotation = false;
@@ -24,15 +24,20 @@ module.exports = function(server, app) {
             if(delegatedNum <= nodes.length) {
                 isVotation = true;
                 calculateStakes();
-                nodeIO.emit('startVotation');
+                resetVotes();
+                serverIO.emit('nodeList', {'list': nodes});
+                nodeIO.emit('startVotation', {'list': nodes});
+            } else {
+                serverIO.to(socket.id).emit('invalidVotation');
             }
         });
     });
 
     nodeIO.on('connection', (socket) => {
         if (!isVotation) {
-            nodes.push(new Node(socket.id, socket.request.connection.remoteAddress, socket.request.connection.remotePort));
-            console.log(`Usuario conectado con id: ${socket.id}`);
+            let node = new Node(socket.id, socket.request.connection.remoteAddress, socket.request.connection.remotePort)
+            nodes.push(node);
+            console.log(`Usuario conectado con id: ${node.id}`);
             serverIO.emit('nodeList', {'list': nodes});
         }
 
@@ -43,41 +48,78 @@ module.exports = function(server, app) {
                     break;
                 }
             }
+            serverIO.emit('nodeList', {'list': nodes});
             votes++;
             if (votes === nodes.length) {
+                console.log('ok');
                 selectDelegates();
             }
         });
 
         socket.on('task', (data) => {
+           console.log(data.task);
            process.push(data.task);
-           serverIO.emit('process', {'process': process});
+           nodeIO.emit('newProcess', {'task': data.task});
+           serverIO.emit('newProcess', {'task': data.task});
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].id === socket.id) {
+                    nodes[i].stake+=1;
+                    break;
+                }
+            }
         });
 
         socket.on('name', data => {
             for (let i = 0; i < nodes.length; i++) {
                 if (nodes[i].id === socket.id) {
                     nodes[i].name = data.name;
+                    nodeIO.to(nodes[i].id).emit('nodeInfo', {'node': nodes[i]});
                     break;
                 }
             }
+            serverIO.emit('nodeList', {'list': nodes});
         });
     });
 
     function selectDelegates() {
         votes = 0;
         sortNodes();
-        serverIO.emit('resultVotation', {'nodes': nodes});
         if (nodes[delegatedNum-1].votes >= (totalStakes*nodePercent)) {
             nodeIO.emit('votationEnd');
+            console.log('Exito');
+            sendNodesInfo();
+            notifyDelegated();
+            serverIO.emit('votationEnd', {'nodes': nodes});
         } else {
-            nodeIO.emit('repeatVotation');
+            console.log('Repetir');
+            nodeIO.emit('startVotation', {'list': nodes});
+        }
+    }
+
+    function sendNodesInfo() {
+        nodes.forEach(node => {
+            nodeIO.to(node.id).emit('nodeInfo', {'node': node});
+        })
+    }
+
+    function resetVotes() {
+        nodes.forEach(node => {
+            node.votes = 0;
+            node.isDelegated = false;
+        });
+    }
+
+    function notifyDelegated() {
+        for (let i = 0; i < delegatedNum; i++) {
+            nodes[i].isDelegated = true;
+            console.log(nodes[i].name);
+            nodeIO.to(nodes[i].id).emit('isDelegated');
         }
     }
 
     function sortNodes() {
         nodes.sort(function (node1, node2) {
-            return node2.stake - node1.stake;
+            return node2.votes - node1.votes;
         });
     }
     
@@ -87,10 +129,6 @@ module.exports = function(server, app) {
             totalStakes += node.stake;
         });
     }
-    
-    app.get('/', () => {
-
-    });
 
     function Node(id, ip, port) {
         this.id = id;
@@ -98,6 +136,7 @@ module.exports = function(server, app) {
         this.port = port;
         this.name = "";
         this.votes = 0;
-        this.stake =  Math.random() * (6 - 1) + 1;
+        this.isDelegated = false;
+        this.stake =  Math.floor(Math.random() * (6 - 1) + 1);
     }
 };
